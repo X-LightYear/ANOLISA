@@ -126,8 +126,25 @@ def _scan_file(root: Path, path: Path, language: Language) -> list[dict[str, Any
         ]
 
     try:
-        code = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
+        with path.open("rb") as fh:
+            raw_code = fh.read(_MAX_CODE_FILE_BYTES + 1)
+    except OSError as exc:
+        return [_error_finding(root, path, language, f"failed to read file: {exc}")]
+
+    if len(raw_code) > _MAX_CODE_FILE_BYTES:
+        return [
+            _error_finding(
+                root,
+                path,
+                language,
+                f"file too large to scan: more than {_MAX_CODE_FILE_BYTES} bytes",
+                {"max_file_bytes": _MAX_CODE_FILE_BYTES},
+            )
+        ]
+
+    try:
+        code = raw_code.decode("utf-8")
+    except UnicodeDecodeError as exc:
         return [_error_finding(root, path, language, f"failed to read file: {exc}")]
 
     if not code.strip():

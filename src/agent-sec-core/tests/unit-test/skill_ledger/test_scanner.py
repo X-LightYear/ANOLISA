@@ -8,6 +8,7 @@ These tests protect:
 3. Status derivation from findings — deny > warn > pass is the per-scanner logic.
 """
 
+from io import BytesIO
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -417,6 +418,27 @@ class TestSkillCodeScannerAdapter(unittest.TestCase):
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["rule"], "code-scanner-error")
         self.assertEqual(findings[0]["level"], "warn")
+        self.assertIn("file too large", findings[0]["metadata"]["error"])
+        self.assertEqual(findings[0]["metadata"]["max_file_bytes"], 1024 * 1024)
+
+    def test_file_growth_after_stat_is_still_bounded(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            self._write(root, "growing.py", "print('small')\n")
+            oversized = BytesIO(b"x" * (1024 * 1024 + 1))
+            with (
+                patch(
+                    "agent_sec_cli.skill_ledger.scanner.skill_code_scanner.Path.open",
+                    return_value=oversized,
+                ),
+                patch(
+                    "agent_sec_cli.skill_ledger.scanner.skill_code_scanner.scan"
+                ) as mocked_scan,
+            ):
+                findings = scan_skill_code(root)
+
+        mocked_scan.assert_not_called()
+        self.assertEqual(findings[0]["rule"], "code-scanner-error")
         self.assertIn("file too large", findings[0]["metadata"]["error"])
         self.assertEqual(findings[0]["metadata"]["max_file_bytes"], 1024 * 1024)
 
