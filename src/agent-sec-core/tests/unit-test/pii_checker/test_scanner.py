@@ -610,7 +610,7 @@ def test_multibyte_truncation_boundary_is_safe():
     result = _scan("备注🙂 alice@example.com", max_bytes=max_bytes, redact_output=True)
 
     assert result["summary"]["truncated"] is True
-    assert result["summary"]["bytes_scanned"] == max_bytes
+    assert result["summary"]["bytes_scanned"] == len("备注".encode("utf-8"))
     assert result["verdict"] == "pass"
     assert result["redacted_text"] == "备注"
 

@@ -99,11 +99,8 @@ def _decode_limited_input(data: bytes, max_bytes: int | None) -> tuple[str, bool
     truncated = len(data) > max_bytes
     if truncated:
         data = data[:max_bytes]
-    return (
-        _decode_utf8_input(data, allow_partial_tail=truncated),
-        truncated,
-        len(data),
-    )
+    text = _decode_utf8_input(data, allow_partial_tail=truncated)
+    return text, truncated, len(text.encode("utf-8"))
 
 
 def _read_limited_input(path: Path, max_bytes: int | None) -> tuple[str, bool, int]:

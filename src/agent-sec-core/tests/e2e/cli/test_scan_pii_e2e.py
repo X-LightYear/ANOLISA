@@ -347,7 +347,11 @@ def test_scan_pii_stdin_max_bytes_truncates_before_scan(
     assert data["ok"] is True
     assert data["summary"]["source"] == "manual"
     assert data["summary"]["truncated"] is True
-    assert data["summary"]["bytes_scanned"] == max_bytes
+    # V1 reports the UTF-8-safe prefix that was actually scanned. V2 keeps
+    # its compatibility counter as the pre-boundary prefix length; its
+    # separate scanned_bytes field reports the decoded prefix length.
+    expected_bytes_scanned = max_bytes if _V2 else len("备注".encode("utf-8"))
+    assert data["summary"]["bytes_scanned"] == expected_bytes_scanned
     assert not any(finding["type"] == "email" for finding in data["findings"])
 
 

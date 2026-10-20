@@ -866,7 +866,7 @@ class TestScanPiiCli(unittest.TestCase):
         _, kwargs = mock_invoke.call_args
         self.assertEqual(kwargs["text"], "备注")
         self.assertTrue(kwargs["input_truncated"])
-        self.assertEqual(kwargs["input_bytes_scanned"], max_bytes)
+        self.assertEqual(kwargs["input_bytes_scanned"], len("备注".encode("utf-8")))
         self.assertNotIn("\ufffd", kwargs["text"])
 
     @patch("agent_sec_cli.pii_checker.cli.invoke")
@@ -1013,7 +1013,7 @@ class TestScanPiiCli(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         _, kwargs = mock_invoke.call_args
         self.assertTrue(kwargs["input_truncated"])
-        self.assertEqual(kwargs["input_bytes_scanned"], max_bytes)
+        self.assertEqual(kwargs["input_bytes_scanned"], len("备注".encode("utf-8")))
         self.assertNotIn("\ufffd", kwargs["text"])
 
     @patch("agent_sec_cli.pii_checker.cli.invoke")
