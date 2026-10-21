@@ -37,6 +37,11 @@ for (const target of TARGETS) {
 }
 
 assert.equal(targetForSelector('linux-arm64').pkg_suffix, 'linux-arm64');
+assert.equal(targetForSelector('  LINUX-ARM64  ').pkg_suffix, 'linux-arm64');
+assert.equal(
+  targetForSelector(' AARCH64-APPLE-DARWIN ').pkg_suffix,
+  'darwin-arm64',
+);
 assert.equal(
   targetForSelector('aarch64-apple-darwin').pkg_suffix,
   'darwin-arm64',

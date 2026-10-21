@@ -78,9 +78,11 @@ export function buildStrategyForTarget(
 }
 
 export function targetForSelector(selector) {
+  const normalized =
+    typeof selector === 'string' ? selector.trim().toLowerCase() : selector;
   const exact = TARGETS.filter(
     (target) =>
-      target.pkg_suffix === selector || target.rust_target === selector,
+      target.pkg_suffix === normalized || target.rust_target === normalized,
   );
   if (exact.length === 1) {
     return exact[0];
@@ -88,8 +90,8 @@ export function targetForSelector(selector) {
 
   const aliases = TARGETS.filter(
     (target) =>
-      target.npm_cpu === selector ||
-      target.rust_target.split('-', 1)[0] === selector,
+      target.npm_cpu === normalized ||
+      target.rust_target.split('-', 1)[0] === normalized,
   );
   if (aliases.length === 1) {
     return aliases[0];
