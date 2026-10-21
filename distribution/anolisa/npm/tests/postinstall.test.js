@@ -20,7 +20,7 @@ import {
 import { arch, platform, tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { platformPackageName } from '../scripts/platforms.js';
 
 const npmRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -141,6 +141,39 @@ check('missing native binary preserves the previous launcher', (fixture) => {
   assert.ok(lstatSync(fixture.launcher).isSymbolicLink());
   assert.equal(readlinkSync(fixture.launcher), fixture.oldTarget);
 });
+
+check(
+  'failed replacement preserves the previous launcher',
+  (fixture) => {
+    writeFileSync(fixture.native, nativeContent);
+    mkdirSync(dirname(fixture.launcher));
+    symlinkSync(fixture.oldTarget, fixture.launcher);
+
+    const harness = join(fixture.root, 'run-postinstall-blocked-temp.mjs');
+    writeFileSync(
+      harness,
+      `import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+mkdirSync(join(process.cwd(), 'bin', \`anolisa.tmp-\${process.pid}\`));
+await import(${JSON.stringify(
+        pathToFileURL(join(fixture.scripts, 'postinstall.js')).href,
+      )});
+`,
+    );
+
+    const result = spawnSync(process.execPath, [harness], {
+      cwd: fixture.root,
+      encoding: 'utf8',
+      timeout: 5000,
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 1, result.stdout);
+    assert.match(result.stderr, /EISDIR|EPERM/);
+    assert.ok(lstatSync(fixture.launcher).isSymbolicLink());
+    assert.equal(readlinkSync(fixture.launcher), fixture.oldTarget);
+  },
+);
 
 check('launcher survives moving the installation tree', (fixture) => {
   writeFileSync(fixture.native, nativeContent);
