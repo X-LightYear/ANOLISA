@@ -22,6 +22,7 @@
 import {
   existsSync,
   mkdirSync,
+  statSync,
   symlinkSync,
   unlinkSync,
   chmodSync,
@@ -37,6 +38,18 @@ const __dirname = dirname(__filename);
 const require = createRequire(import.meta.url);
 const packageRoot = join(__dirname, '..');
 const binDir = join(packageRoot, 'bin');
+const linkPath = join(binDir, 'anolisa');
+
+function removeLauncher() {
+  // Unlink the entry itself: existsSync follows dangling symlinks.
+  try {
+    unlinkSync(linkPath);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
 
 function resolvePackageBinary() {
   const pkgName = platformPackageName(platform(), arch());
@@ -66,31 +79,39 @@ function resolvePackageBinary() {
   }
 
   const nativeBinary = join(pkgDir, 'bin', 'anolisa');
-  if (!existsSync(nativeBinary)) {
+  let nativeBinaryStat;
+  try {
+    nativeBinaryStat = statSync(nativeBinary);
+  } catch {
+    // Missing paths, unreadable parent directories and symlink loops land here.
+  }
+  if (!nativeBinaryStat) {
     throw new Error(`Binary not found in ${pkgName} at ${nativeBinary}`);
+  }
+  if (!nativeBinaryStat.isFile()) {
+    throw new Error(
+      `Binary is not a regular file in ${pkgName} at ${nativeBinary}`,
+    );
   }
 
   return nativeBinary;
 }
 
 function main() {
-  const nativeBinary = resolvePackageBinary();
+  let nativeBinary;
+  try {
+    nativeBinary = resolvePackageBinary();
+  } catch (error) {
+    removeLauncher();
+    throw error;
+  }
 
   // Ensure bin/ directory exists
   if (!existsSync(binDir)) {
     mkdirSync(binDir, { recursive: true });
   }
 
-  const linkPath = join(binDir, 'anolisa');
-
-  // Do not follow the launcher symlink: its previous target may be absent.
-  try {
-    unlinkSync(linkPath);
-  } catch (error) {
-    if (error.code !== 'ENOENT') {
-      throw error;
-    }
-  }
+  removeLauncher();
 
   // Keep the launcher valid when the complete installation tree is relocated.
   symlinkSync(relative(binDir, nativeBinary), linkPath);

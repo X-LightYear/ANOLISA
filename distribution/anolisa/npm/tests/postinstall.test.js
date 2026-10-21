@@ -10,7 +10,6 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  readlinkSync,
   realpathSync,
   renameSync,
   rmSync,
@@ -132,14 +131,24 @@ check(
   },
 );
 
-check('missing native binary preserves the previous launcher', (fixture) => {
+check('missing native binary removes the previous launcher', (fixture) => {
   mkdirSync(dirname(fixture.launcher));
   symlinkSync(fixture.oldTarget, fixture.launcher);
   const result = install(fixture);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Binary not found/);
-  assert.ok(lstatSync(fixture.launcher).isSymbolicLink());
-  assert.equal(readlinkSync(fixture.launcher), fixture.oldTarget);
+  assert.throws(() => lstatSync(fixture.launcher), { code: 'ENOENT' });
+});
+
+check('directory at native binary path is rejected and unlinked', (fixture) => {
+  mkdirSync(fixture.native);
+  mkdirSync(dirname(fixture.launcher));
+  symlinkSync(fixture.native, fixture.launcher);
+  const result = install(fixture);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /not a regular file/);
+  assert.equal(lstatSync(fixture.native).isDirectory(), true);
+  assert.throws(() => lstatSync(fixture.launcher), { code: 'ENOENT' });
 });
 
 check('launcher survives moving the installation tree', (fixture) => {
