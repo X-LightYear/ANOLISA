@@ -44,7 +44,7 @@ export const PLATFORM_MAP = Object.freeze(
 export function platformPackageName(npmOs, npmCpu) {
   const key = `${npmOs}-${npmCpu}`;
   const packageName = PLATFORM_MAP[key];
-  if (!packageName) {
+  if (!Object.prototype.hasOwnProperty.call(PLATFORM_MAP, key)) {
     throw new Error(`No prebuilt binary is available for ${key}`);
   }
   return packageName;

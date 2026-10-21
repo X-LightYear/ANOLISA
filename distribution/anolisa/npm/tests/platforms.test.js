@@ -56,6 +56,10 @@ assert.equal(
   platformPackageName('darwin', 'x64'),
   '@anolisa/cli-darwin-x64',
 );
+assert.throws(
+  () => platformPackageName('toStrin', 'g'),
+  /No prebuilt binary is available for toStrin-g/,
+);
 
 assert.deepEqual(
   targetsForHost('linux').map((target) => target.pkg_suffix),
