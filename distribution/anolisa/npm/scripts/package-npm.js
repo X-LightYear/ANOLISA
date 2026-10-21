@@ -34,6 +34,7 @@
 import { execSync } from 'node:child_process';
 import {
   existsSync,
+  chmodSync,
   mkdirSync,
   readFileSync,
   writeFileSync,
@@ -57,6 +58,10 @@ const __dirname = dirname(__filename);
 const npmDir = join(__dirname, '..');
 const workspaceRoot = join(npmDir, '..');
 const distDir = join(npmDir, 'dist');
+
+export function ensureExecutable(path) {
+  chmodSync(path, 0o755);
+}
 
 // Read version from Cargo.toml
 const cargoToml = readFileSync(join(workspaceRoot, 'Cargo.toml'), 'utf-8');
@@ -197,7 +202,7 @@ function packagePlatform(target, binaryPath) {
 
   // Copy binary
   copyFileSync(binaryPath, join(pkgDir, 'bin', 'anolisa'));
-  execSync(`chmod 755 "${join(pkgDir, 'bin', 'anolisa')}"`, { stdio: 'pipe' });
+  ensureExecutable(join(pkgDir, 'bin', 'anolisa'));
 
   const template = platformPackageTemplate(
     join(npmDir, 'platforms', target.pkg_suffix, 'package.json'),
@@ -232,7 +237,7 @@ console.error('@anolisa/cli: postinstall has not run yet. Run "npm rebuild @anol
 process.exit(1);
 `;
   writeFileSync(join(rootPkgDir, 'bin', 'anolisa'), stubScript);
-  execSync(`chmod 755 "${join(rootPkgDir, 'bin', 'anolisa')}"`, { stdio: 'pipe' });
+  ensureExecutable(join(rootPkgDir, 'bin', 'anolisa'));
 
   for (const script of ['platforms.js', 'postinstall.js']) {
     copyFileSync(
@@ -303,7 +308,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
