@@ -288,6 +288,18 @@ fn test_parse_env_bool_yes_variant() {
     assert!(config.is_stats_enabled());
     let config = TokenlessConfig::load_with_env(Some("YES"));
     assert!(config.is_stats_enabled());
+    let config = TokenlessConfig::load_with_env(Some(" 1 "));
+    assert!(config.is_stats_enabled());
+    let config = TokenlessConfig::load_with_env(Some(" "));
+    assert!(config.is_stats_enabled());
+}
+
+#[test]
+fn test_parse_env_bool_ignores_surrounding_whitespace() {
+    let config = TokenlessConfig::load_with_env(Some("  yes  "));
+    assert!(config.is_stats_enabled());
+    let config = TokenlessConfig::load_with_env(Some("\tFALSE\n"));
+    assert!(!config.is_stats_enabled());
 }
 
 #[test]

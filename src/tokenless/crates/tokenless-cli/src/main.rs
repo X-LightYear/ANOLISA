@@ -291,8 +291,9 @@ enum StatsCommands {
 fn env_flag(name: &str, default: bool) -> bool {
     std::env::var(name)
         .ok()
-        .filter(|value| !value.is_empty())
+        .filter(|value| !value.trim().is_empty())
         .map_or(default, |value| {
+            let value = value.trim();
             value == "1" || value.eq_ignore_ascii_case("true") || value.eq_ignore_ascii_case("yes")
         })
 }

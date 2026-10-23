@@ -50,12 +50,15 @@ impl Default for TokenlessConfig {
     }
 }
 
-/// Parse a boolean env value: "1", "true", "yes" (case-insensitive) → true.
-/// All other non-empty values — including "0", "false", "no" — return false.
-/// (Empty strings are filtered to `None` by callers before reaching this
-/// function, so they never reach here.)
+/// Parse a boolean env value after trimming surrounding whitespace.
+/// "1", "true", and "yes" (case-insensitive) return true; all other
+/// non-empty values — including "0", "false", and "no" — return false.
+/// Whitespace-only values are treated as unset by the callers.
 fn parse_env_bool(val: &str) -> bool {
-    val == "1" || val.eq_ignore_ascii_case("true") || val.eq_ignore_ascii_case("yes")
+    let normalized = val.trim();
+    normalized == "1"
+        || normalized.eq_ignore_ascii_case("true")
+        || normalized.eq_ignore_ascii_case("yes")
 }
 
 impl TokenlessConfig {
@@ -132,10 +135,10 @@ impl TokenlessConfig {
         path: Option<&PathBuf>,
         read_file: impl FnOnce(&std::path::Path) -> std::io::Result<String>,
     ) -> Self {
-        // Normalize empty strings to None — an empty env var means "unset".
-        let stats_env = stats_env.filter(|v| !v.is_empty());
-        let sls_env = sls_env.filter(|v| !v.is_empty());
-        let compression_env = compression_env.filter(|v| !v.is_empty());
+        // Normalize empty and whitespace-only strings to None — they mean "unset".
+        let stats_env = stats_env.filter(|v| !v.trim().is_empty());
+        let sls_env = sls_env.filter(|v| !v.trim().is_empty());
+        let compression_env = compression_env.filter(|v| !v.trim().is_empty());
 
         // Fast path: all three toggles are determined by env — no file read needed.
         if let (Some(s), Some(sl), Some(c)) = (stats_env, sls_env, compression_env) {
@@ -201,13 +204,13 @@ impl TokenlessConfig {
     pub fn load() -> Self {
         let stats_env = std::env::var("TOKENLESS_STATS_ENABLED")
             .ok()
-            .filter(|v| !v.is_empty());
+            .filter(|v| !v.trim().is_empty());
         let sls_env = std::env::var("TOKENLESS_SLS_ENABLED")
             .ok()
-            .filter(|v| !v.is_empty());
+            .filter(|v| !v.trim().is_empty());
         let compression_env = std::env::var("TOKENLESS_COMPRESSION_ENABLED")
             .ok()
-            .filter(|v| !v.is_empty());
+            .filter(|v| !v.trim().is_empty());
         Self::load_with_envs_and_path(
             stats_env.as_deref(),
             sls_env.as_deref(),

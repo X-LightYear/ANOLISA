@@ -12,7 +12,7 @@ Tokenless 默认启用压缩、本地统计和 SLS 度量。由于本地统计�
 环境变量 > ~/.tokenless/config.json > 默认值
 ```
 
-空环境变量视为未设置。布尔环境变量中，`1`、`true`、`yes`（大小写不敏感）表示 true；其他非空值表示 false。为了可读性，建议明确使用 `true` 或 `false`。
+空环境变量视为未设置。匹配布尔环境变量前会去除首尾空白，因此 ` yes ` 与 `yes` 等价。`1`、`true`、`yes`（大小写不敏感）表示 true；其他非空值表示 false。为了可读性，建议明确使用 `true` 或 `false`。
 
 当前实现有一个例外：当 `TOKENLESS_STATS_ENABLED` 和 `TOKENLESS_SLS_ENABLED` 都是非空值时，代码会完全跳过配置文件。在这个分支中，压缩开关优先使用 `TOKENLESS_COMPRESSION_ENABLED`；未设置时直接默认为 `true`。如果同时导出两个记录开关，也应显式导出压缩开关。
 
@@ -93,8 +93,8 @@ Tokenless 不读取宿主持久化输出文件以补全被截断的 Diff，也�
 ## HTML 页面转写
 
 HTML 页面转写默认开启。在 Tokenless 或宿主 Agent 继承的环境中设置
-`TOKENLESS_HTML_EXTRACTION_ENABLED=0` 关闭。未设置或为空时保持开启，`1`、`true`、`yes`
-（不区分大小写）也表示开启；其他值均关闭。此开关独立于总压缩开关，
+`TOKENLESS_HTML_EXTRACTION_ENABLED=0` 关闭。未设置或为空时保持开启；匹配前会去除首尾空白，
+`1`、`true`、`yes`（不区分大小写）也表示开启；其他值均关闭。此开关独立于总压缩开关，
 不是 `config.json` 字段。
 转写开启时，设置 `TOKENLESS_COMPRESSION_ENABLED=0` 会测量候选，但仍返回原文。
 
@@ -145,8 +145,8 @@ adapter 分类：文件读取工具的结果透传；shell 工具的结果附带
 | `TOKENLESS_STATS_DB` | 覆盖统计数据库路径 | 必须位于真实用户 home 或选定的数据目录下 |
 | `TOKENLESS_STASH_DB` | 覆盖 Stash 数据库路径 | 必须位于真实用户 home 或选定的数据目录下 |
 | `TOKENLESS_SLS_PATH` | 覆盖 SLS JSONL 路径 | 必须位于 `/var/log/` 或 `/tmp/` 下 |
-| `TOKENLESS_DIFF_COMPRESSION_ENABLED` | 启用 Git Diff 上下文裁剪 | 默认关闭；`1`、`true`、`yes` 启用；不覆盖 SDK 参数 |
-| `TOKENLESS_HTML_EXTRACTION_ENABLED` | HTML 页面转写开关 | 默认开启；`1`、`true`、`yes` 开启，其他非空值关闭；不覆盖 SDK 参数 |
+| `TOKENLESS_DIFF_COMPRESSION_ENABLED` | 启用 Git Diff 上下文裁剪 | 默认关闭；匹配前去除首尾空白；`1`、`true`、`yes` 启用；不覆盖 SDK 参数 |
+| `TOKENLESS_HTML_EXTRACTION_ENABLED` | HTML 页面转写开关 | 默认开启；匹配前去除首尾空白；`1`、`true`、`yes` 开启，其他非空值关闭；不覆盖 SDK 参数 |
 
 ### Adapter 和诊断变量
 

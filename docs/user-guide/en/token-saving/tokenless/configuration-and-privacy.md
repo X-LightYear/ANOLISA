@@ -12,7 +12,7 @@ In the normal path, each toggle uses:
 Environment variable > ~/.tokenless/config.json > default
 ```
 
-An empty environment variable is treated as unset. For Boolean environment variables, `1`, `true`, and `yes` are true, case-insensitively; any other non-empty value is false. Prefer explicit `true` or `false` values for readability.
+An empty environment variable is treated as unset. For Boolean environment variables, surrounding whitespace is trimmed before matching, so ` yes ` behaves like `yes`. `1`, `true`, and `yes` are true, case-insensitively; any other non-empty value is false. Prefer explicit `true` or `false` values for readability.
 
 There is one current implementation exception: when both `TOKENLESS_STATS_ENABLED` and `TOKENLESS_SLS_ENABLED` are non-empty, the config file is skipped completely. In that branch, compression uses `TOKENLESS_COMPRESSION_ENABLED` when set and otherwise defaults to `true`. If you export both recording variables, export the compression variable explicitly as well.
 
@@ -103,8 +103,8 @@ opt-in.
 
 HTML page rendering is enabled by default. Set `TOKENLESS_HTML_EXTRACTION_ENABLED=0`
 in the environment inherited by Tokenless or its host agent to disable it. When unset
-or empty it stays enabled; `1`, `true`, and `yes` also enable it (case-insensitively),
-and any other value disables it. This option is independent of the general compression
+or empty it stays enabled; surrounding whitespace is trimmed before matching, and `1`, `true`,
+and `yes` also enable it (case-insensitively); any other value disables it. This option is independent of the general compression
 switch and is not a `config.json` field. With rendering enabled,
 `TOKENLESS_COMPRESSION_ENABLED=0` measures candidates but returns the original.
 
@@ -168,8 +168,8 @@ Local rendering and original recovery have been verified on finite samples.
 | `TOKENLESS_STATS_DB` | Override the statistics database | Must be under the real user home or selected data directory |
 | `TOKENLESS_STASH_DB` | Override the Stash database | Must be under the real user home or selected data directory |
 | `TOKENLESS_SLS_PATH` | Override the SLS JSONL path | Must be under `/var/log/` or `/tmp/` |
-| `TOKENLESS_DIFF_COMPRESSION_ENABLED` | Enable Git Diff context cropping | Off by default; `1`, `true`, or `yes` enables; does not override SDK options |
-| `TOKENLESS_HTML_EXTRACTION_ENABLED` | Switch HTML page rendering | On by default; `1`, `true`, or `yes` enables, any other non-empty value disables; does not override SDK options |
+| `TOKENLESS_DIFF_COMPRESSION_ENABLED` | Enable Git Diff context cropping | Off by default; surrounding whitespace is trimmed before matching; `1`, `true`, or `yes` enables; does not override SDK options |
+| `TOKENLESS_HTML_EXTRACTION_ENABLED` | Switch HTML page rendering | On by default; surrounding whitespace is trimmed before matching; `1`, `true`, or `yes` enables, any other non-empty value disables; does not override SDK options |
 
 ### Adapter and diagnostic variables
 
