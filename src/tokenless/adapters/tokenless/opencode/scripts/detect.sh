@@ -27,7 +27,7 @@ if [ -z "$VERSION" ]; then
     exit 2
 fi
 
-CONFIG_HOME="${TOKENLESS_OPENCODE_CONFIG_DIR:-${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}}"
+CONFIG_HOME="${TOKENLESS_OPENCODE_CONFIG_DIR:-${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-${HOME:-/nonexistent}/.config}/opencode}}"
 PLUGIN_LINK="$CONFIG_HOME/plugins/tokenless.js"
 if [ -L "$PLUGIN_LINK" ] && [ "$PLUGIN_LINK" -ef "$PLUGIN_SOURCE" ]; then
     echo "[${COMPONENT}] ${AGENT}: ready (${VERSION})"

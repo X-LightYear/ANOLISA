@@ -52,6 +52,27 @@ else
     fail "detect returned $detect_rc before installation"
 fi
 
+# A host may invoke a read-only detector from a stripped environment. HOME is
+# not needed to identify an installed CLI, so an unset HOME must still produce
+# the normal "not installed" result instead of a set -u error. A set -u abort
+# exits 1 too, so the status alone cannot distinguish the two cases: assert on
+# the detector's own message and on an empty stderr as well.
+nohome_err="$SANDBOX/detect-nohome.err"
+if nohome_out="$(env -u HOME -u TOKENLESS_OPENCODE_CONFIG_DIR -u OPENCODE_CONFIG_DIR \
+        -u XDG_CONFIG_HOME ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" \
+        OPENCODE_BIN="$FAKE_BIN/opencode" PATH="$FAKE_BIN:$PATH" \
+        bash "$DETECT_SH" 2>"$nohome_err")"; then
+    nohome_rc=0
+else
+    nohome_rc=$?
+fi
+if [ "$nohome_rc" -eq 1 ] && [ ! -s "$nohome_err" ] &&
+        [[ "$nohome_out" == *"plugin not installed"* ]]; then
+        pass "detect keeps its normal not-installed result without HOME"
+else
+    fail "detect did not report not-installed without HOME (exit $nohome_rc, out: $nohome_out, err: $(head -c 200 "$nohome_err" 2>/dev/null))"
+fi
+
 if bash "$INSTALL_SH" >/dev/null; then
     pass "OpenCode plugin installation succeeds"
 else
