@@ -406,4 +406,15 @@ done
 run_postinstall dangling-launchers
 assert_eq "rebuilding repaired launchers is idempotent" "$STATUS" "0"
 
+# =============================================================================
+# 10. A payload that is not a regular file is rejected, not linked
+# =============================================================================
+rm -f "$PKG/node_modules/$PLATFORM_PKG/bin/tokenless"
+mkdir -p "$PKG/node_modules/$PLATFORM_PKG/bin/tokenless"
+run_postinstall non-file-payload
+assert_eq "postinstall fails when a native payload is a directory" "$STATUS" "1"
+assert_contains "names the rejected payload" "$OUT" "Binary tokenless is not a regular file"
+assert_no_file "leaves no launcher stub for the rejected payload" "$PKG/bin/tokenless"
+assert_file "still links the healthy rtk launcher" "$PKG/bin/rtk"
+
 echo "npm-postinstall test passed"

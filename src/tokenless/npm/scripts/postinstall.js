@@ -28,6 +28,7 @@
 
 import {
   existsSync,
+  statSync,
   mkdirSync,
   symlinkSync,
   unlinkSync,
@@ -165,6 +166,15 @@ function foreignAdapterOwner(dest, destParent) {
   return null;
 }
 
+function removeLauncher(linkPath) {
+  // Unlink the entry itself: existsSync follows dangling symlinks.
+  try {
+    unlinkSync(linkPath);
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+  }
+}
+
 function main() {
   const key = `${platform()}-${arch()}`;
   const pkgName = PLATFORM_MAP[key];
@@ -215,28 +225,30 @@ function main() {
   const missing = [];
   for (const binary of BINARIES) {
     const nativeBinary = join(pkgDir, 'bin', binary);
-    if (!existsSync(nativeBinary)) {
-      console.error(`anolisa-tokenless: Binary ${binary} not found in ${pkgName}`);
+    const linkPath = join(binDir, binary);
+    let nativeBinaryStat;
+    try {
+      nativeBinaryStat = statSync(nativeBinary);
+    } catch {
+      // Missing paths, unreadable parent directories, and symlink loops are
+      // all reported as unusable payloads below.
+    }
+    if (!nativeBinaryStat || !nativeBinaryStat.isFile()) {
+      removeLauncher(linkPath);
+      const reason = nativeBinaryStat ? 'is not a regular file' : 'not found';
+      console.error(`anolisa-tokenless: Binary ${binary} ${reason} in ${pkgName}`);
       missing.push(binary);
       continue;
     }
 
-    const linkPath = join(binDir, binary);
-
-    // Unlink the entry itself: existsSync follows dangling symlinks.
-    try {
-      unlinkSync(linkPath);
-    } catch (err) {
-      if (err.code !== 'ENOENT') throw err;
-    }
-
+    removeLauncher(linkPath);
     symlinkSync(nativeBinary, linkPath);
     chmodSync(linkPath, 0o755);
   }
 
   if (missing.length > 0) {
     console.error(
-      `anolisa-tokenless: Incomplete platform package ${pkgName} — missing: ${missing.join(', ')}. Failing install.`,
+      `anolisa-tokenless: Incomplete platform package ${pkgName} — unusable: ${missing.join(', ')}. Failing install.`,
     );
     process.exit(1);
   }
