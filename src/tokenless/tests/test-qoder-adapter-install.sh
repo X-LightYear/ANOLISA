@@ -13,9 +13,9 @@ SOURCE_ADAPTER_DIR="$SCRIPT_DIR/../adapters/tokenless"
 SANDBOX="$(mktemp -d -t tokenless-qoder-install-test.XXXXXX)"
 trap 'rm -rf "$SANDBOX"' EXIT
 
-FAKE_HOME="$SANDBOX/home"
+FAKE_HOME="$SANDBOX/home with spaces"
 ADAPTER_DIR="$SANDBOX/adapter root"
-QODERCLI="$FAKE_HOME/.qoder/bin/qodercli/qodercli"
+QODERCLI="$FAKE_HOME/.qoder/bin/qodercli/qodercli-2026.1.0"
 mkdir -p "$FAKE_HOME/.qoder/bin/qodercli" "$ADAPTER_DIR"
 cp -R "$SOURCE_ADAPTER_DIR"/. "$ADAPTER_DIR"/
 
@@ -134,10 +134,33 @@ cat > "$SETTINGS" <<'JSONEOF'
 JSONEOF
 settings_before="$(cksum "$SETTINGS")"
 
-if HOME="$FAKE_HOME" ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" bash "$DETECT_SH" >/dev/null; then
+detect_out="$(HOME="$FAKE_HOME" ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" bash "$DETECT_SH" 2>&1)"
+if [ "$detect_out" = "[tokenless] qoder: detected compatible qodercli at $QODERCLI" ]; then
     pass "detect accepts a CLI with the required plugin lifecycle"
 else
-    fail "detect rejected a compatible qodercli"
+    fail "detect selected an unexpected qodercli: $detect_out"
+fi
+
+versioned_detect_out="$(HOME="$FAKE_HOME" ANOLISA_QODER_VERSION=2026.1.0 \
+    ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" bash "$DETECT_SH" 2>&1)"
+if [ "$versioned_detect_out" = "[tokenless] qoder: detected compatible qodercli at $QODERCLI" ]; then
+    pass "detect honors an exact Qoder version selector"
+else
+    fail "detect ignored the exact Qoder version selector: $versioned_detect_out"
+fi
+
+UNVERSIONED_HOME="$SANDBOX/unversioned home"
+UNVERSIONED_QODERCLI="$UNVERSIONED_HOME/.qoder/bin/qodercli/qodercli"
+mkdir -p "$(dirname "$UNVERSIONED_QODERCLI")"
+cp "$QODERCLI" "$UNVERSIONED_QODERCLI"
+chmod +x "$UNVERSIONED_QODERCLI"
+unversioned_detect_out="$(HOME="$UNVERSIONED_HOME" ANOLISA_QODER_VERSION=2099.9.9 \
+    ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" bash "$DETECT_SH" 2>&1)"
+if [ "$unversioned_detect_out" = \
+        "[tokenless] qoder: detected compatible qodercli at $UNVERSIONED_QODERCLI" ]; then
+    pass "detect falls back to an unversioned qodercli"
+else
+    fail "detect did not preserve the unversioned fallback: $unversioned_detect_out"
 fi
 
 if HOME="$FAKE_HOME" ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" bash "$INSTALL_SH" >/dev/null; then

@@ -6,23 +6,9 @@ AGENT="${ANOLISA_TARGET:-qoder}"
 COMPONENT="${ANOLISA_COMPONENT:-tokenless}"
 DRY_RUN="${ANOLISA_DRY_RUN:-0}"
 
-find_qodercli() {
-    local versioned_glob latest_versioned candidate
-    versioned_glob="$HOME/.qoder/bin/qodercli/qodercli-${ANOLISA_QODER_VERSION:-*}"
-    # shellcheck disable=SC2086 # Intentional version glob expansion.
-    latest_versioned="$(ls -d $versioned_glob 2>/dev/null | sort -V | tail -1 || true)"
-
-    for candidate in "$latest_versioned" \
-                     "$HOME/.qoder/bin/qodercli/qodercli" \
-                     "qodercli"; do
-        [ -n "$candidate" ] || continue
-        if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
-            printf '%s\n' "$candidate"
-            return 0
-        fi
-    done
-    return 1
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./find-qodercli.sh
+. "$SCRIPT_DIR/find-qodercli.sh"
 
 QODERCLI="$(find_qodercli || true)"
 echo "[${COMPONENT}] Removing ${AGENT} plugin..."
@@ -31,7 +17,9 @@ echo "[${COMPONENT}] Removing ${AGENT} plugin..."
 # its own store under ~/.qoder, and it references this adapter directory, so the
 # CLI is the only way to remove it — but its absence is not evidence about it.
 qoder_registration_present() {
-    local qoder_home="${HOME}/.qoder"
+    local user_home="${HOME:-}"
+    [ -n "$user_home" ] || return 1
+    local qoder_home="$user_home/.qoder"
     [ -d "$qoder_home" ] || return 1
     # bin/ holds the CLI itself, never a plugin registration.
     grep -rq --exclude-dir=bin "tokenless@local" "$qoder_home" 2>/dev/null
@@ -45,13 +33,13 @@ if [ -z "$QODERCLI" ]; then
     # it. Fail closed instead, and keep the plugin files so this can be retried.
     if qoder_registration_present; then
         echo "[${COMPONENT}] ERROR: qodercli not found and a tokenless@local registration is still" >&2
-        echo "[${COMPONENT}] ERROR: present under ${HOME}/.qoder, so it cannot be confirmed removed." >&2
+        echo "[${COMPONENT}] ERROR: present under ${HOME:-<unset>}/.qoder, so it cannot be confirmed removed." >&2
         echo "[${COMPONENT}] Plugin files were left in place; put qodercli back on PATH and re-run:" >&2
         echo "[${COMPONENT}]   qodercli plugins uninstall tokenless --scope user" >&2
         exit 1
     fi
     echo "[${COMPONENT}] qodercli not found and no tokenless registration is present under"
-    echo "[${COMPONENT}] ${HOME}/.qoder; nothing to unregister."
+    echo "[${COMPONENT}] ${HOME:-<unset>}/.qoder; nothing to unregister."
     exit 0
 fi
 for subcommand in list uninstall; do

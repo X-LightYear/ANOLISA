@@ -5,20 +5,10 @@ set -euo pipefail
 AGENT="${ANOLISA_TARGET:-qoder}"
 COMPONENT="${ANOLISA_COMPONENT:-tokenless}"
 
-versioned_glob="$HOME/.qoder/bin/qodercli/qodercli-${ANOLISA_QODER_VERSION:-*}"
-# shellcheck disable=SC2086 # Intentional version glob expansion.
-latest_versioned="$(ls -d $versioned_glob 2>/dev/null | sort -V | tail -1 || true)"
-
-QODERCLI=""
-for candidate in "$latest_versioned" \
-                 "$HOME/.qoder/bin/qodercli/qodercli" \
-                 "qodercli"; do
-    [ -n "$candidate" ] || continue
-    if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
-        QODERCLI="$candidate"
-        break
-    fi
-done
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./find-qodercli.sh
+. "$SCRIPT_DIR/find-qodercli.sh"
+QODERCLI="$(find_qodercli || true)"
 
 if [ -z "$QODERCLI" ]; then
     echo "[${COMPONENT}] ${AGENT}: qodercli not found in standard locations" >&2

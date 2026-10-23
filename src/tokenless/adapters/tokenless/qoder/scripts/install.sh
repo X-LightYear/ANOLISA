@@ -9,23 +9,9 @@ ADAPTER_DIR="${ANOLISA_ADAPTER_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 PLUGIN_DIR="$ADAPTER_DIR/qoder"
 PLUGIN_JSON="$PLUGIN_DIR/.qoder-plugin/plugin.json"
 
-find_qodercli() {
-    local versioned_glob latest_versioned candidate
-    versioned_glob="$HOME/.qoder/bin/qodercli/qodercli-${ANOLISA_QODER_VERSION:-*}"
-    # shellcheck disable=SC2086 # Intentional version glob expansion.
-    latest_versioned="$(ls -d $versioned_glob 2>/dev/null | sort -V | tail -1 || true)"
-
-    for candidate in "$latest_versioned" \
-                     "$HOME/.qoder/bin/qodercli/qodercli" \
-                     "qodercli"; do
-        [ -n "$candidate" ] || continue
-        if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
-            printf '%s\n' "$candidate"
-            return 0
-        fi
-    done
-    return 1
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./find-qodercli.sh
+. "$SCRIPT_DIR/find-qodercli.sh"
 
 QODERCLI="$(find_qodercli || true)"
 if [ -z "$QODERCLI" ]; then
