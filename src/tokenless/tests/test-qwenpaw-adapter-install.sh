@@ -93,6 +93,21 @@ else
     fail "detect did not report installable before installation"
 fi
 
+# Detection is read-only and must retain its normal missing-prerequisite status
+# even when a host invokes it without HOME.
+if env -u HOME -u QWENPAW_WORKING_DIR -u COPAW_WORKING_DIR \
+        QWENPAW_BIN="$SANDBOX/emptybin/no-qwenpaw" ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" \
+        ANOLISA_SKIP_WHEEL_PREFLIGHT=1 bash "$DETECT_SH" >/dev/null 2>&1; then
+    fail "detect reported a ready QwenPaw install without HOME"
+else
+    detect_rc=$?
+    if [ "$detect_rc" -eq 2 ]; then
+        pass "detect keeps its prerequisite status without HOME"
+    else
+        fail "detect crashed without HOME (exit $detect_rc)"
+    fi
+fi
+
 if run bash "$INSTALL_SH" >/dev/null; then
     pass "plugin installation succeeds"
 else

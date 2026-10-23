@@ -11,12 +11,13 @@ set -euo pipefail
 AGENT="${ANOLISA_TARGET:-qwenpaw}"
 COMPONENT="${ANOLISA_COMPONENT:-tokenless}"
 ADAPTER_DIR="${ANOLISA_ADAPTER_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
+HOME_DIR="${HOME:-/nonexistent}"
 # Resolve the working directory like QwenPaw: QWENPAW_WORKING_DIR, else
 # COPAW_WORKING_DIR, else a legacy ~/.copaw, else ~/.qwenpaw.
 PLUGIN_ID="tokenless"
 QWENPAW_WORKING_DIR="${QWENPAW_WORKING_DIR:-${COPAW_WORKING_DIR:-}}"
 if [ -z "$QWENPAW_WORKING_DIR" ]; then
-    if [ -d "$HOME/.copaw" ]; then QWENPAW_WORKING_DIR="$HOME/.copaw"; other="$HOME/.qwenpaw"; else QWENPAW_WORKING_DIR="$HOME/.qwenpaw"; other="$HOME/.copaw"; fi
+    if [ -d "$HOME_DIR/.copaw" ]; then QWENPAW_WORKING_DIR="$HOME_DIR/.copaw"; other="$HOME_DIR/.qwenpaw"; else QWENPAW_WORKING_DIR="$HOME_DIR/.qwenpaw"; other="$HOME_DIR/.copaw"; fi
     # ~/.copaw may have appeared or vanished since the plugin was installed:
     # prefer the default location that actually holds it.
     if [ ! -d "$QWENPAW_WORKING_DIR/plugins/$PLUGIN_ID" ] && [ -d "$other/plugins/$PLUGIN_ID" ]; then
@@ -24,7 +25,7 @@ if [ -z "$QWENPAW_WORKING_DIR" ]; then
     fi
 fi
 QWENPAW_BIN="${QWENPAW_BIN:-}"
-export PATH="${QWENPAW_HOME:-$HOME/.qwenpaw}/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+export PATH="${QWENPAW_HOME:-$HOME_DIR/.qwenpaw}/bin:$HOME_DIR/.local/bin:/usr/local/bin:$PATH"
 
 PLUGIN_SRC="$ADAPTER_DIR/qwenpaw"
 
