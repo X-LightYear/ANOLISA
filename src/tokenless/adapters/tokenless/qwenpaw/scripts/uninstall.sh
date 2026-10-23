@@ -8,6 +8,10 @@ COMPONENT="${ANOLISA_COMPONENT:-tokenless}"
 # COPAW_WORKING_DIR, else a legacy ~/.copaw, else ~/.qwenpaw.
 PLUGIN_ID="tokenless"
 QWENPAW_WORKING_DIR="${QWENPAW_WORKING_DIR:-${COPAW_WORKING_DIR:-}}"
+if [ -z "$QWENPAW_WORKING_DIR" ] && [ -z "${HOME:-}" ]; then
+    echo "[${COMPONENT}] ERROR: cannot resolve the QwenPaw working directory: set HOME, QWENPAW_WORKING_DIR, or COPAW_WORKING_DIR before running this script" >&2
+    exit 1
+fi
 if [ -z "$QWENPAW_WORKING_DIR" ]; then
     if [ -d "$HOME/.copaw" ]; then QWENPAW_WORKING_DIR="$HOME/.copaw"; other="$HOME/.qwenpaw"; else QWENPAW_WORKING_DIR="$HOME/.qwenpaw"; other="$HOME/.copaw"; fi
     # ~/.copaw may have appeared or vanished since the plugin was installed:
@@ -18,7 +22,15 @@ if [ -z "$QWENPAW_WORKING_DIR" ]; then
 fi
 QWENPAW_BIN="${QWENPAW_BIN:-}"
 DRY_RUN="${ANOLISA_DRY_RUN:-0}"
-export PATH="${QWENPAW_HOME:-$HOME/.qwenpaw}/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+QWENPAW_BIN_ROOT="${QWENPAW_HOME:-${HOME:+$HOME/.qwenpaw}}"
+if [ -z "$QWENPAW_BIN_ROOT" ]; then
+    QWENPAW_BIN_ROOT="$QWENPAW_WORKING_DIR"
+fi
+PATH_PREFIX="${QWENPAW_BIN_ROOT%/}/bin:"
+if [ -n "${HOME:-}" ]; then
+    PATH_PREFIX="${PATH_PREFIX}${HOME%/}/.local/bin:"
+fi
+export PATH="${PATH_PREFIX}/usr/local/bin:$PATH"
 
 PLUGIN_DST="${QWENPAW_WORKING_DIR%/}/plugins/${PLUGIN_ID}"
 

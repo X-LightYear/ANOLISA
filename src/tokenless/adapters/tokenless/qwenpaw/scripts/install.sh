@@ -15,12 +15,24 @@ ADAPTER_DIR="${ANOLISA_ADAPTER_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 # Resolve the working directory like QwenPaw: QWENPAW_WORKING_DIR, else
 # COPAW_WORKING_DIR, else a legacy ~/.copaw, else ~/.qwenpaw.
 QWENPAW_WORKING_DIR="${QWENPAW_WORKING_DIR:-${COPAW_WORKING_DIR:-}}"
+if [ -z "$QWENPAW_WORKING_DIR" ] && [ -z "${HOME:-}" ]; then
+    echo "[${COMPONENT}] ERROR: cannot resolve the QwenPaw working directory: set HOME, QWENPAW_WORKING_DIR, or COPAW_WORKING_DIR before running this script" >&2
+    exit 1
+fi
 if [ -z "$QWENPAW_WORKING_DIR" ]; then
     if [ -d "$HOME/.copaw" ]; then QWENPAW_WORKING_DIR="$HOME/.copaw"; else QWENPAW_WORKING_DIR="$HOME/.qwenpaw"; fi
 fi
 QWENPAW_BIN="${QWENPAW_BIN:-}"
 DRY_RUN="${ANOLISA_DRY_RUN:-0}"
-export PATH="${QWENPAW_HOME:-$HOME/.qwenpaw}/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+QWENPAW_BIN_ROOT="${QWENPAW_HOME:-${HOME:+$HOME/.qwenpaw}}"
+if [ -z "$QWENPAW_BIN_ROOT" ]; then
+    QWENPAW_BIN_ROOT="$QWENPAW_WORKING_DIR"
+fi
+PATH_PREFIX="${QWENPAW_BIN_ROOT%/}/bin:"
+if [ -n "${HOME:-}" ]; then
+    PATH_PREFIX="${PATH_PREFIX}${HOME%/}/.local/bin:"
+fi
+export PATH="${PATH_PREFIX}/usr/local/bin:$PATH"
 
 PLUGIN_ID="tokenless"
 PLUGIN_SRC="$ADAPTER_DIR/qwenpaw"

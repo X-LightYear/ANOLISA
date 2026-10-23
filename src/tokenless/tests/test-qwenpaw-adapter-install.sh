@@ -76,6 +76,56 @@ DETECT_SH="$ADAPTER_DIR/qwenpaw/scripts/detect.sh"
 INSTALL_SH="$ADAPTER_DIR/qwenpaw/scripts/install.sh"
 UNINSTALL_SH="$ADAPTER_DIR/qwenpaw/scripts/uninstall.sh"
 
+# Lifecycle scripts must not expand an unset HOME into a set -u crash or a
+# write under an accidental default. Explicit working-directory overrides
+# remain valid in stripped environments.
+if env -u HOME -u QWENPAW_WORKING_DIR -u COPAW_WORKING_DIR \
+        QWENPAW_BIN="$QWENPAW_STUB" ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" \
+        bash "$INSTALL_SH" >/dev/null 2>"$SANDBOX/install-no-home.err"; then
+    fail "installer accepted an unresolved QwenPaw working directory"
+else
+    pass "installer rejects an unresolved QwenPaw working directory"
+fi
+if env -u HOME -u QWENPAW_WORKING_DIR -u COPAW_WORKING_DIR \
+        QWENPAW_BIN="$QWENPAW_STUB" ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" \
+        bash "$UNINSTALL_SH" >/dev/null 2>"$SANDBOX/uninstall-no-home.err"; then
+    fail "uninstaller accepted an unresolved QwenPaw working directory"
+else
+    pass "uninstaller rejects an unresolved QwenPaw working directory"
+fi
+if grep -Fq "cannot resolve the QwenPaw working directory" "$SANDBOX/install-no-home.err" &&
+        grep -Fq "cannot resolve the QwenPaw working directory" "$SANDBOX/uninstall-no-home.err"; then
+    pass "no-home QwenPaw lifecycle errors are actionable"
+else
+    fail "no-home QwenPaw lifecycle errors are not actionable"
+fi
+
+# An explicit working-directory override must remain usable when a minimal
+# runner omits HOME. This also exercises the PATH construction in both scripts:
+# a bare $HOME expansion here would abort before the dry-run report.
+NO_HOME_QP_DIR="$SANDBOX/no-home-qwenpaw"
+if env -u HOME QWENPAW_WORKING_DIR="$NO_HOME_QP_DIR" QWENPAW_BIN="$QWENPAW_STUB" \
+        ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" ANOLISA_SKIP_WHEEL_PREFLIGHT=1 \
+        ANOLISA_DRY_RUN=1 bash "$INSTALL_SH" >"$SANDBOX/install-no-home-override.out" \
+        2>"$SANDBOX/install-no-home-override.err" &&
+        grep -Fq "DRY-RUN: QWENPAW_WORKING_DIR=$NO_HOME_QP_DIR" \
+            "$SANDBOX/install-no-home-override.out" &&
+        [ ! -s "$SANDBOX/install-no-home-override.err" ]; then
+    pass "installer honors an explicit working directory without HOME"
+else
+    fail "installer cannot use an explicit working directory without HOME"
+fi
+if env -u HOME QWENPAW_WORKING_DIR="$NO_HOME_QP_DIR" QWENPAW_BIN="$QWENPAW_STUB" \
+        ANOLISA_DRY_RUN=1 bash "$UNINSTALL_SH" >"$SANDBOX/uninstall-no-home-override.out" \
+        2>"$SANDBOX/uninstall-no-home-override.err" &&
+        grep -Fq "DRY-RUN: QWENPAW_WORKING_DIR=$NO_HOME_QP_DIR" \
+            "$SANDBOX/uninstall-no-home-override.out" &&
+        [ ! -s "$SANDBOX/uninstall-no-home-override.err" ]; then
+    pass "uninstaller honors an explicit working directory without HOME"
+else
+    fail "uninstaller cannot use an explicit working directory without HOME"
+fi
+
 run() { HOME="$FAKE_HOME" ANOLISA_ADAPTER_DIR="$ADAPTER_DIR" ANOLISA_SKIP_WHEEL_PREFLIGHT=1 "$@"; }
 # Same harness with the wheel preflight armed; every case below pins the probe
 # result through a stub, so the suite never reaches the network.
