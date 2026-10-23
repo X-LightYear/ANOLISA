@@ -311,6 +311,10 @@ test-claude-code-detect:
 	@echo "==> Testing claude-code detect.sh first-run retry..."
 	bash tests/test-claude-code-detect-retry.sh
 
+test-codex-detect-json:
+	@echo "==> Testing codex detect.sh JSON fallback..."
+	bash tests/test-codex-detect-json-fallback.sh
+
 # Protocol v2 golden parity belongs to the integration contract, and this is the
 # only tokenless test target a CI job calls (`make test-hook-parity` has no
 # workflow caller). The prerequisite also builds target/debug/tokenless first:
@@ -343,7 +347,7 @@ test-claude-code-detect:
 # Keep the worker protocol suite as a prerequisite so test-integration and
 # its aggregate callers cannot omit it. It is stdlib-only: the subprocess
 # fixture supplies Headroom stubs on PYTHONPATH, without a Headroom venv.
-test-integration: test-hook-parity test-claude-code-detect test-toon-cleanup test-hook-scripts \
+test-integration: test-hook-parity test-claude-code-detect test-codex-detect-json test-toon-cleanup test-hook-scripts \
                   test-qwenwork-hooks test-headroom-pipeline-worker
 	@echo "==> Testing hook integration (Python)..."
 	python3 tests/test_codex_response_diagnostics.py
